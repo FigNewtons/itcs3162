@@ -27,7 +27,7 @@ for url in top_stories:
     
 
 for story in stories:
-    print(story + "\n\n\n")
+    print(story + "\n")
 
 
 
