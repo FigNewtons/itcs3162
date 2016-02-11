@@ -16,7 +16,13 @@ stories = []
 for url in top_stories:
     page = requests.get(url).content
     page_soup = BeautifulSoup(page, 'html.parser')
-    raw_story = page_soup.find_all("p", class_ = "zn-body__paragraph")[1: -1]
+
+    # CNN's money section has different page structure
+    if "money.cnn" in url:
+        raw_story = page_soup.find("div", id = "storytext").find_all("p")
+    else:
+        raw_story = page_soup.find_all("p", class_ = "zn-body__paragraph")[1: -1]
+
     stories.append( ' '.join([line.get_text() for line in raw_story]))
     
 
