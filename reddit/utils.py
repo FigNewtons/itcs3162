@@ -1,5 +1,6 @@
 import praw
 import datetime
+import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 
 # Configuration for PRAW -- the user must supply this info manually
@@ -26,7 +27,7 @@ def get_comment_tree(thread):
     """Return the (summarized) comment tree of a given thread. """
 
     thread.replace_more_comments(limit = None, threshold = 0)
-    op = "" if not thread.author else thread.author.name
+    op = None if not thread.author else thread.author
 
     tree = build_tree(thread.comments, op)
 
@@ -47,7 +48,7 @@ def build_tree(comment_tree, op):
         edited = parent.edited
         is_op = False if not author else author.name == op.name
 
-        replies = get_comment_tree(parent.replies, op)
+        replies = build_tree(parent.replies, op)
 
         comment = {'author': author, 'time': time, 
                    'comment_length': comment_length, 
@@ -101,15 +102,59 @@ def get_commenters(thread, attr = 'freq'):
     return (commenters, set(commenters), ranks)
 
 
+def sample_subreddit(subreddit, n = 50):
+    sub = reddit.get_subreddit(subreddit)
+    return [sub.get_random_submission() for i in range(n)]
+
+def plot_karma_histogram(thread):
+    "Return list of comment karma and plot for a given thread. "
+    thread.replace_more_comments(limit = None, threshold = 0)
+    comments = praw.helpers.flatten_tree(thread.comments)
+
+    karma = [comment.score for comment in comments]
+
+    plt.hist(karma)
+    plt.title("Comment karma histogram for thread:\n{title}\n".format(title=thread.title))
+    plt.xlabel("Karma")
+    plt.ylabel("Frequency")
+
 if __name__ == '__main__':
 
+    '''
     math_thread = reddit.get_submission(submission_id = '49cj33')
     comment_tree = get_comment_tree(math_thread)
-
     print(comment_tree)
+    '''
 
-    print("\n\nop: {0}\n".format(math_op))
+    # Example
+    results = list(reddit.search("algebraic topology", subreddit = "math"))
 
-    print(thread_stats(math_thread))
+    # List of sets of redditors
+    thread_list = [ get_commenters(thread)[1] for thread in results]
+
+    redditors = set()
+    for thread in thread_list:
+        redditors = redditors.union(thread)
+
+    thread_count = []
+    for redditor in redditors:
+        thread_count.append((redditor, sum([redditor in thread for thread in thread_list])))
+
+    print(sorted(thread_count, key = lambda x: x[1], reverse = True))
+    print(len(thread_list))
+
+
+
     
+
+
+
+
+
+
+
+
+
+
+
 
