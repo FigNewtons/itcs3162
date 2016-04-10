@@ -38,8 +38,33 @@ def clean(article):
     return [porter.stem(w.lower()) for w in wordpunct_tokenize(article) if w.lower() not in stop_words]
 
 
-if __name__ == '__main__':
+def kmeans(df, d, sections):
+    nrow = df.shape[0]
+    init = [ np.random.choice(k, 1)[0] for k in sections.values() ]
+    K = len(sections)
 
+    centroids = df.iloc[init]
+    centroids.index = range(0, K)
+
+    def assign_row(row):
+        row_label = centroids.apply(lambda c: d(row, c), axis = 1).idxmin()
+        return centroids.index.get_loc(row_label)
+
+    for i in range(10):
+        labels = df.apply(assign_row, axis = 1)
+        centroids = df.groupby(labels).mean()
+
+    sse = 0
+    for i in range(nrow):
+        sse += dist(df.iloc[i], centroids.iloc[labels[i]])**2
+
+    return (labels, centroids, sse)
+
+def accuracy(predict, actual):
+    return sum(predict == actual) / len(actual)
+
+
+def run():
     article_list = glob(os.path.join("articles", "*", "*"))
     articles = []
     sections = {}
@@ -57,7 +82,11 @@ if __name__ == '__main__':
         with open(article, "r") as f:
             articles.append(''.join(f.readlines()))
 
-    K = len(sections)
+
+    true_labels = [0] * len(articles)
+    for i, key in enumerate(sections.keys()):
+        for val in sections[key]:
+            true_labels[val] = i
 
     clean_articles = list(map(clean, articles))
 
@@ -71,5 +100,18 @@ if __name__ == '__main__':
 
     tdm = pd.DataFrame(counts)
     tdm.index = titles
-    print(tdm.head())
+    # tdm.to_csv("tdm.csv")
+
+    elabels, ecentroids, esse = kmeans(tdm, dist, sections)
+    clabels, ccentroids, csse = kmeans(tdm, cosine, sections)
+    jlabels, jcentroids, jsse = kmeans(tdm > 0, jaccard, sections)
+
+    with open("results.txt", "w") as f:
+        print("Euclidean: Accuracy = {0}, SSE = {1:.4f}".format(accuracy(elabels, true_labels), esse), file = f)
+        print("Cosine: Accuracy = {0}, SSE = {1:.4f}".format(accuracy(clabels, true_labels), csse), file = f)
+        print("Jaccard: Accuracy = {0}, SSE = {1:.4f}".format(accuracy(jlabels, true_labels), jsse), file = f)
+
+if __name__ == '__main__':
+    run()
+
 
