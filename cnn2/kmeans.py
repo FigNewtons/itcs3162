@@ -56,7 +56,7 @@ def kmeans(df, d, sections):
 
     sse = 0
     for i in range(nrow):
-        sse += dist(df.iloc[i], centroids.iloc[labels[i]])**2
+        sse += d(df.iloc[i], centroids.iloc[labels[i]])**2
 
     return (labels, centroids, sse)
 

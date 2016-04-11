@@ -85,7 +85,7 @@ def parse(section, url):
 
         if len(full_text) > 250 and title is not None:
             try:
-                file_name = '-'.join(map(remove_punctuation, title.lower().split())) 
+                file_name = '-'.join(map(remove_punctuation, title.lower().split())) + '.txt'
 
                 path = os.path.join('articles', section)
                 if not os.path.isdir(path):
